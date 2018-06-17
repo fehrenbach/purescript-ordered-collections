@@ -9,6 +9,7 @@ module Data.Map.Internal
   , singleton
   , checkValid
   , insert
+  , insertWith
   , lookup
   , lookupLE
   , lookupLT
@@ -450,6 +451,21 @@ insert k v = down Nil
       ThreeLeft k1 v1 c k2 v2 d, KickUp a k' v' b -> up ctx (KickUp (Two a k' v' b) k1 v1 (Two c k2 v2 d))
       ThreeMiddle a k1 v1 k2 v2 d, KickUp b k' v' c -> up ctx (KickUp (Two a k1 v1 b) k' v' (Two c k2 v2 d))
       ThreeRight a k1 v1 b k2 v2, KickUp c k' v' d -> up ctx (KickUp (Two a k1 v1 b) k2 v2 (Two c k' v' d))
+
+-- | Insert or replace a key/value pair in a map using a given
+-- | combining function. If the key is not in the map the value is
+-- | inserted. If a value for the given key is already in the map, it
+-- | is replaced by the result of calling the function with the
+-- | existing value and the new value.
+-- |
+-- | ```PureScript
+-- | insertWith (-) 0 3 (singleton 0 2) == singleton 0 (-1)
+-- | insertWith (<>) 0 "🐈" (singleton 0 "🐕") == singleton 0 "🐕🐈"
+-- | insertWith (flip const) == insert
+-- | insertWith const -- insert if not exists, but do not overwrite
+-- | ```
+insertWith :: forall k v. Ord k => (v -> v -> v) -> k -> v -> Map k v -> Map k v
+insertWith f k v m = insert k (maybe v (\o -> f o v) (lookup k m)) m
 
 -- | Delete a key and its corresponding value from a map.
 delete :: forall k v. Ord k => k -> Map k v -> Map k v
